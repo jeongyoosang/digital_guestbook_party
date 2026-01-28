@@ -135,7 +135,7 @@ const I18N: Record<
     step1: "Check-in",
     step2: "Message",
     step3: "Tip (Account)",
-    namePH: "Name / Nickname",
+    namePH: "Name",
     phonePH: "Mobile number",
     groomSide: "Side A",
     brideSide: "Side B",
