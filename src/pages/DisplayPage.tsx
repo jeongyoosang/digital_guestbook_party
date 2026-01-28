@@ -123,9 +123,6 @@ export default function DisplayPage() {
   );
   const [dateText, setDateText] = useState("");
 
-  const [groomName, setGroomName] = useState("");
-  const [brideName, setBrideName] = useState("");
-
   // ✅ recipients를 state로 보관 (라벨/이름 모두 여기서 컨트롤 가능)
   const [recipients, setRecipients] = useState<Recipient[]>([]);
 
@@ -222,81 +219,27 @@ export default function DisplayPage() {
         setMediaUrls(Array.isArray(data.media_urls) ? data.media_urls : []);
 
         // ✅ recipients 저장 (라벨/이름 커스텀용)
-        const recs = Array.isArray(data.recipients)
-          ? (data.recipients as Recipient[])
-          : [];
-        setRecipients(recs);
-
-        // ✅ (fallback 1) event_settings.recipients에서 이름 채우기
-        // - 기본 결혼식: role이 '신랑/신부'면 그걸 우선
-        // - 특수 이벤트: role이 다르면 "1번/2번" 순서로 이름을 보조로 채움(단, 기존 이름이 비어있을 때만)
-        const groom = recs.find((r) => r?.role === "신랑")?.name;
-        const bride = recs.find((r) => r?.role === "신부")?.name;
-
-        if (!groomName) {
-          if (groom) setGroomName(groom);
-          else if (recs?.[0]?.name) setGroomName(recs[0].name);
-        }
-        if (!brideName) {
-          if (bride) setBrideName(bride);
-          else if (recs?.[1]?.name) setBrideName(recs[1].name);
-        }
+        setRecipients(
+          Array.isArray(data.recipients) ? (data.recipients as Recipient[]) : []
+        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
-  /* ---------- names (primary) ---------- */
+  /* ---------- names (fetch events table) ---------- */
   useEffect(() => {
     if (!eventId) return;
 
     (async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("groom_name, bride_name")
+        .select("title")
         .eq("id", eventId)
         .maybeSingle();
 
       if (error) {
         console.error("[DisplayPage] events select error:", error);
         return;
-      }
-      if (!data) {
-        console.warn(
-          "[DisplayPage] events data is null (maybe RLS?) eventId:",
-          eventId
-        );
-        return;
-      }
-
-      // ✅ events 값이 있으면 그게 1순위
-      setGroomName(data.groom_name ?? "");
-      setBrideName(data.bride_name ?? "");
-
-      // ✅ 혹시 events에 값이 비어있으면 event_settings에서 한번 더 시도
-      if (!data.groom_name || !data.bride_name) {
-        const { data: s, error: sErr } = await supabase
-          .from("event_settings")
-          .select("recipients")
-          .eq("event_id", eventId)
-          .maybeSingle();
-
-        if (sErr) console.error("[DisplayPage] fallback recipients error:", sErr);
-
-        const recs = Array.isArray(s?.recipients)
-          ? (s!.recipients as Recipient[])
-          : [];
-
-        const groom = recs.find((r) => r?.role === "신랑")?.name;
-        const bride = recs.find((r) => r?.role === "신부")?.name;
-
-        if (!data.groom_name) {
-          if (groom) setGroomName(groom);
-          else if (recs?.[0]?.name) setGroomName(recs[0].name);
-        }
-        if (!data.bride_name) {
-          if (bride) setBrideName(bride);
-          else if (recs?.[1]?.name) setBrideName(recs[1].name);
-        }
       }
     })();
   }, [eventId]);
@@ -371,7 +314,7 @@ export default function DisplayPage() {
       if (bgm) {
         bgm.muted = false;
         bgm.volume = 1;
-        bgm.play().catch(() => {});
+        bgm.play().catch(() => { });
       }
       return;
     }
@@ -395,7 +338,7 @@ export default function DisplayPage() {
             v.volume = 1;
           }, 300);
         })
-        .catch(() => {});
+        .catch(() => { });
     });
   }, [currentIsVideo, currentMediaUrl]);
 
@@ -416,37 +359,17 @@ export default function DisplayPage() {
   /* ---------- ✅ 헤더/폰트 ---------- */
   const topBarHeight = isPortrait ? "26vh" : "28vh";
 
-  const groomBrideLabelClass = isPortrait ? "text-4xl" : "text-2xl";
-  const groomBrideGapClass = isPortrait ? "mb-3" : "mb-2";
-
-  const roleLabelStyle: CSSProperties = {
-    letterSpacing: "0.02em",
-    fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-  };
-
-  const nameStyle: CSSProperties = isPortrait
-    ? {
-        fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-        fontSize: "clamp(46px, 4.6vw, 84px)",
-        lineHeight: 1.03,
-      }
-    : {
-        fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-        fontSize: "clamp(28px, 4.2vw, 64px)",
-        lineHeight: 1.05,
-      };
-
   const titleStyle: CSSProperties = isPortrait
     ? {
-        fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-        fontSize: "clamp(60px, 5.0vw, 102px)",
-        lineHeight: 1.03,
-      }
+      fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
+      fontSize: "clamp(60px, 5.0vw, 102px)",
+      lineHeight: 1.03,
+    }
     : {
-        fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-        fontSize: "clamp(22px, 3.2vw, 52px)",
-        lineHeight: 1.1,
-      };
+      fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
+      fontSize: "clamp(22px, 3.2vw, 52px)",
+      lineHeight: 1.1,
+    };
 
   const lowerStyle: CSSProperties = isPortrait
     ? { fontSize: "clamp(30px, 2.6vw, 46px)" }
@@ -459,10 +382,6 @@ export default function DisplayPage() {
   const qrSize = isPortrait
     ? "clamp(200px, 15vw, 280px)"
     : "clamp(80px, 8vw, 120px)";
-
-  /* ---------- ✅ 라벨(역할) : 기본 신랑/신부, 있으면 Supabase recipients.role 반영 ---------- */
-  const leftRoleLabel = recipients?.[0]?.role || "신랑";
-  const rightRoleLabel = recipients?.[1]?.role || "신부";
 
   /* ---------- ✅ 한글 가독성/좌우 안전 ---------- */
   const getSafeRange = (len: number) => {
@@ -501,8 +420,8 @@ export default function DisplayPage() {
             ? 16
             : 14
           : len >= 60
-          ? 14
-          : 12;
+            ? 14
+            : 12;
         return !activeItems.some((a) => Math.abs(a.leftPct - x) < minGap);
       });
 
@@ -583,53 +502,26 @@ export default function DisplayPage() {
       >
         <div className="absolute inset-0 bg-black/40 z-20" />
 
-        <div className="relative w-full max-w-6xl flex items-center justify-between z-40">
-          <div className="text-right">
-            <p
-              className={`${groomBrideLabelClass} ${groomBrideGapClass} text-white/70`}
-              style={roleLabelStyle}
-            >
-              {leftRoleLabel}
-            </p>
-            <p className="text-white font-bold" style={nameStyle}>
-              {groomName}
-            </p>
-          </div>
+        <div className="relative w-full max-w-6xl flex flex-col items-center justify-center z-40 text-center">
+          <p className="text-white font-bold mb-3" style={titleStyle}>
+            Support the Artists!
+          </p>
+          <img
+            src="/preic_qr.png"
+            className="mx-auto"
+            style={{ width: qrSize, height: qrSize }}
+            alt="QR"
+          />
 
-          <div className="text-center">
-            <p className="text-white font-bold mb-3" style={titleStyle}>
-              축하의 마음 전하기
-            </p>
+          <p className="mt-3 text-white/90" style={lowerStyle}>
+            {lowerMessage}
+          </p>
 
-            <img
-              src="/preic_qr.png"
-              className="mx-auto"
-              style={{ width: qrSize, height: qrSize }}
-              alt="QR"
-            />
-
-            <p className="mt-3 text-white/90" style={lowerStyle}>
-              {lowerMessage}
+          {dateText && (
+            <p className="text-white/70" style={dateStyle}>
+              {dateText}
             </p>
-
-            {dateText && (
-              <p className="text-white/70" style={dateStyle}>
-                {dateText}
-              </p>
-            )}
-          </div>
-
-          <div className="text-left">
-            <p
-              className={`${groomBrideLabelClass} ${groomBrideGapClass} text-white/70`}
-              style={roleLabelStyle}
-            >
-              {rightRoleLabel}
-            </p>
-            <p className="text-white font-bold" style={nameStyle}>
-              {brideName}
-            </p>
-          </div>
+          )}
         </div>
       </header>
 
@@ -656,7 +548,7 @@ export default function DisplayPage() {
               onLoadedMetadata={() => {
                 const v = videoRef.current;
                 if (!v) return;
-                v.play().catch(() => {});
+                v.play().catch(() => { });
               }}
             />
           ) : isPortrait ? (

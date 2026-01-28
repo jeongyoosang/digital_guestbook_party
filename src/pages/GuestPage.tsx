@@ -6,10 +6,11 @@ import { getEventPhase, type EventPhase } from "../lib/time";
 
 type Lang = "KO" | "EN";
 type DisplayMode = "nickname" | "anonymous";
-type Side = "" | "groom" | "bride";
+type Side = string;
 
 interface RouteParams {
   eventId: string;
+  [key: string]: string | undefined;
 }
 
 type EventSettingsRow = {
@@ -35,7 +36,7 @@ type EventAccountRow = {
 };
 
 const MESSAGE_MAX = 80;
-const DEFAULT_DISPLAY_MESSAGE = "축하드립니다 💐";
+const DEFAULT_DISPLAY_MESSAGE = "응원합니다! ✨";
 const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_UyaHn";
 
 function onlyDigits(s: string) {
@@ -69,9 +70,6 @@ const I18N: Record<
     phonePH: string;
     groomSide: string;
     brideSide: string;
-    relationshipLabel: string;
-    relationshipPH: string;
-    relationshipDetailPH: string;
     messageLabel: string;
     messagePH: string;
     skipMessage: string;
@@ -88,97 +86,94 @@ const I18N: Record<
     attendanceNoteShort: string;
     kakaoThanks: string;
     selectSideFirst: string;
-    selectRelationship: string;
     invalidBasic: string;
     writeMessage: string;
     closedNotice: string;
-    selectAccount: string; // 🔧 수정: 계좌 선택 안내
+    selectAccount: string;
+    recipient1: string;
+    recipient2: string;
+    recipient3: string;
   }
 > = {
   KO: {
-    title: "Happy Wedding",
-    subtitle: "소중한 발걸음, 감사한 마음을 남겨주세요",
-    step1: "방문 확인",
-    step2: "축하 메시지",
-    step3: "마음 전하실 곳",
-    namePH: "성함 (실명)",
-    phonePH: "연락처",
-    groomSide: "신랑측 하객",
-    brideSide: "신부측 하객",
-    relationshipLabel: "관계",
-    relationshipPH: "관계를 선택하세요",
-    relationshipDetailPH: "관계 직접입력",
-    messageLabel: "축하 메시지",
-    messagePH: "신랑·신부에게 전할 따뜻한 한마디",
+    title: "지원하기",
+    subtitle: "지원금을 전달해주세요",
+    step1: "기본 정보 & 아티스트 선택",
+    step2: "응원 메시지",
+    step3: "팁 전송",
+    namePH: "성함 (닉네임 가능)",
+    phonePH: "phone number",
+    groomSide: "Artist A",
+    brideSide: "Artist B",
+    messageLabel: "응원 메시지",
+    messagePH: "아티스트에게 전할 따뜻한 한마디",
     skipMessage: "메시지 생략",
     nickname: "닉네임 표시",
     anonymous: "익명으로 표시",
-    nextBtn: "전달하고 축의하기", // 🔧 수정: CTA 변경
+    nextBtn: "응원하고 팁 전달하기",
     sending: "전송 중...",
-    infoUse: "입력하신 정보는 예식 확인 및 감사인사 목적으로만 사용됩니다.",
+    infoUse: "입력하신 정보는 아티스트의 감사인사 목적으로만 사용됩니다.",
     successTitle: "마음이 전달되었습니다",
-    successDesc: "두 분의 앞날을 함께 축복해주셔서 감사합니다.",
-    giftTitle: "축의금 송금하기",
+    successDesc: "아티스트를 응원해주셔서 감사합니다.",
+    giftTitle: "팁 송금하기",
     copyBtn: "계좌번호 복사하기",
     copied: "계좌번호가 복사되었습니다.",
-    attendanceNoteShort: "복사해서 송금하셔도\n현장 참석으로 기록됩니다.",
+    attendanceNoteShort: "복사해서 송금하셔도\n응원 메시지가 기록됩니다.",
     kakaoThanks: "카카오톡 알림톡으로 감사인사 받기",
-    selectSideFirst: "어느 쪽 하객이신지 선택해주세요.",
-    selectRelationship: "관계를 선택해주세요.",
+    selectSideFirst: "응원할 대상을 선택해주세요.",
     invalidBasic: "성함과 연락처를 확인해주세요.",
-    writeMessage: "축하 메시지를 적어주세요.",
+    writeMessage: "응원 메시지를 적어주세요.",
     closedNotice: "현재는 작성 가능 시간이 아닙니다.",
-    selectAccount: "계좌를 선택해주세요.", // 🔧 수정
+    selectAccount: "계좌를 선택해주세요.",
+    recipient1: "Artist A",
+    recipient2: "Artist B",
+    recipient3: "Full Team",
   },
   EN: {
-    title: "Happy Wedding",
-    subtitle: "Leave your warm wishes for the couple",
+    title: "Support the Artists",
+    subtitle: "Tip the artists if you enjoyed their music",
     step1: "Check-in",
     step2: "Message",
-    step3: "Gift (Account)",
-    namePH: "Full name",
+    step3: "Tip (Account)",
+    namePH: "Name / Nickname",
     phonePH: "Mobile number",
-    groomSide: "Groom side",
-    brideSide: "Bride side",
-    relationshipLabel: "Relationship",
-    relationshipPH: "Select relationship",
-    relationshipDetailPH: "Type relationship",
-    messageLabel: "Message",
-    messagePH: "Write a short wish",
+    groomSide: "Side A",
+    brideSide: "Side B",
+    messageLabel: "Support Message",
+    messagePH: "Write a warm message",
     skipMessage: "Skip message",
     nickname: "Show nickname",
     anonymous: "Post anonymously",
-    nextBtn: "Send & gift", // 🔧 수정: CTA 자연스럽게
+    nextBtn: "Support & Tip",
     sending: "Sending...",
-    infoUse: "Your info is used only for check-in and thank-you messages.",
+    infoUse: "Your info is used only for and thank-you messages.",
     successTitle: "Delivered",
-    successDesc: "Thank you for celebrating with them.",
-    giftTitle: "Send a gift",
-    copyBtn: "Copy account",
+    successDesc: "Thank you for supporting the artists.",
+    giftTitle: "Send a Tip",
+    copyBtn: "Copy Account",
     copied: "Copied.",
-    attendanceNoteShort: "Even if you paste & send,\nyou’ll be recorded as attending.",
+    attendanceNoteShort: "Even if you paste & send,\nyour message will be recorded.",
     kakaoThanks: "Get thank-you via Kakao",
-    selectSideFirst: "Please select a side.",
-    selectRelationship: "Please select a relationship.",
+    selectSideFirst: "Please select a recipient.",
     invalidBasic: "Please check your name and phone.",
     writeMessage: "Please write a message.",
     closedNotice: "Not available right now.",
-    selectAccount: "Please select an account.", // 🔧 수정
+    selectAccount: "Please select an account.",
+    recipient1: "Artist A",
+    recipient2: "Artist B",
+    recipient3: "Full Team",
   },
 };
 
 export default function GuestPage() {
   const { eventId } = useParams<RouteParams>();
 
-  const [lang, setLang] = useState<Lang>("KO");
+  const [lang, setLang] = useState<Lang>("EN");
   const t = I18N[lang];
 
   const [side, setSide] = useState<Side>("");
   const [realName, setRealName] = useState("");
   const [phone, setPhone] = useState("");
-
-  const [relationship, setRelationship] = useState("");
-  const [relationshipDetail, setRelationshipDetail] = useState("");
 
   const [sendMoneyOnly, setSendMoneyOnly] = useState(false);
   const [message, setMessage] = useState("");
@@ -194,8 +189,6 @@ export default function GuestPage() {
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  const relationshipSelectRef = useRef<HTMLSelectElement | null>(null); // 🔧 수정: 관계 선택 자동 닫기
 
   // init: phase + accounts
   useEffect(() => {
@@ -214,12 +207,15 @@ export default function GuestPage() {
         !isBlank(settings.ceremony_start_time) &&
         !isBlank(settings.ceremony_end_time)
       ) {
-        const start = new Date(`${settings.ceremony_date}T${settings.ceremony_start_time}`);
-        const end = new Date(`${settings.ceremony_date}T${settings.ceremony_end_time}`);
-        const p = getEventPhase(new Date(), start, end);
-        setPhase(p);
-        setCanWrite(p === "open");
+        console.log("[GuestPage] Ceremony info:", {
+          date: settings.ceremony_date,
+          start: settings.ceremony_start_time,
+          end: settings.ceremony_end_time
+        });
+        setPhase("open");
+        setCanWrite(true);
       } else {
+        console.log("[GuestPage] No valid event settings found, defaulting to open phase.");
         setPhase("open");
         setCanWrite(true);
       }
@@ -237,36 +233,30 @@ export default function GuestPage() {
     init();
   }, [eventId]);
 
+  const uniqueLabels = useMemo(() => {
+    const labels = accounts.map((a) => a.label).filter(Boolean);
+    return Array.from(new Set(labels));
+  }, [accounts]);
+
   const filteredAccounts = useMemo(() => {
     if (!side) return [];
-    return accounts.filter((a) => {
-      const label = (a.label ?? "").toLowerCase();
-      if (side === "groom") return label.includes("신랑") || label.includes("groom");
-      return label.includes("신부") || label.includes("bride");
-    });
+    return accounts.filter((a) => a.label === side);
   }, [accounts, side]);
 
-  // 🔧 수정: side 변경 시 "계좌 선택" 초기화 (신랑↔신부 바꾸면 선택 풀리게)
   useEffect(() => {
     setSelectedAccountId(null);
   }, [side]);
-
-  const relationshipValue =
-    relationship === "직접입력" || relationship === "Custom"
-      ? relationshipDetail.trim()
-      : relationship.trim();
 
   async function upsertLedgerForOwners(params: {
     eventId: string;
     side: Side;
     guestName: string;
     guestPhoneDigits: string;
-    relationship: string;
     messageId: string;
     messageBody: string;
     messageCreatedAtIso: string;
   }) {
-    const { eventId, side, guestName, guestPhoneDigits, relationship, messageId, messageBody, messageCreatedAtIso } =
+    const { eventId, side, guestName, guestPhoneDigits, messageId, messageBody, messageCreatedAtIso } =
       params;
 
     const { data: owners, error: ownerErr } = await supabase
@@ -303,7 +293,7 @@ export default function GuestPage() {
           const patch: any = {
             side: side || null,
             guest_name: guestName,
-            relationship: relationship || null,
+            relationship: null,
             attended: true,
             attended_at: exist.attended_at ?? nowIso, // ✅ 최초 1회만
             message_id: messageId, // ✅ 최신 메시지로 갱신
@@ -321,7 +311,7 @@ export default function GuestPage() {
             side: side || null,
 
             guest_name: guestName,
-            relationship: relationship || null,
+            relationship: null,
             guest_phone: guestPhoneDigits,
 
             attended: true,
@@ -363,8 +353,6 @@ export default function GuestPage() {
     if (!realName.trim() || !isValidKoreanMobile(phoneDigits)) return alert(t.invalidBasic);
     if (!side) return alert(t.selectSideFirst);
 
-    if (!relationshipValue) return alert(t.selectRelationship);
-
     // 🔧 수정: side 선택 후 반드시 계좌 선택해야 제출 가능
     if (!selectedAccountId) return alert(t.selectAccount);
 
@@ -386,7 +374,7 @@ export default function GuestPage() {
         side,
         guest_name: realName.trim(),
         guest_phone: phoneDigits,
-        relationship: relationshipValue,
+        relationship: null,
         body: bodyToSave,
         source: "onsite",
         is_anonymous: displayMode === "anonymous" || sendMoneyOnly,
@@ -409,7 +397,6 @@ export default function GuestPage() {
         side,
         guestName: realName.trim(),
         guestPhoneDigits: phoneDigits,
-        relationship: relationshipValue,
         messageId: msgData.id,
         messageBody: bodyToSave,
         messageCreatedAtIso: msgData.created_at ?? new Date().toISOString(),
@@ -452,7 +439,7 @@ export default function GuestPage() {
             </button>
           </div>
 
-          <div className="text-4xl mb-4">💐</div>
+          <div className="text-4xl mb-4">✨</div>
           <h2 className="text-2xl font-serif font-medium text-gray-900 mb-2">{t.successTitle}</h2>
           <p className="text-gray-500 text-sm mb-8">{t.successDesc}</p>
 
@@ -549,55 +536,17 @@ export default function GuestPage() {
             />
           </div>
 
-          <div className="flex gap-2">
-            {(["groom", "bride"] as const).map((s) => (
+          <div className="flex flex-wrap gap-2">
+            {uniqueLabels.map((btnLabel) => (
               <button
-                key={s}
-                onClick={() => setSide(s)}
-                className={`flex-1 py-3 rounded-2xl text-sm font-medium transition-all ${
-                  side === s ? "bg-rose-500 text-white shadow-md" : "bg-white border border-gray-100 text-gray-500"
-                }`}
+                key={btnLabel}
+                onClick={() => setSide(btnLabel)}
+                className={`flex-1 min-w-[100px] py-3 rounded-2xl text-sm font-medium transition-all ${side === btnLabel ? "bg-rose-500 text-white shadow-md" : "bg-white border border-gray-100 text-gray-500"
+                  }`}
               >
-                {s === "groom" ? t.groomSide : t.brideSide}
+                {btnLabel}
               </button>
             ))}
-          </div>
-
-          {/* 관계 */}
-          <div className="pt-2 space-y-2">
-            <label className="text-xs font-semibold text-gray-700">{t.relationshipLabel}</label>
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                ref={relationshipSelectRef} // 🔧 수정
-                value={relationship}
-                onChange={(e) => {
-                  setRelationship(e.target.value);
-                  // 🔧 수정: 선택하면 자동으로 닫히게(모바일 대응)
-                  setTimeout(() => relationshipSelectRef.current?.blur(), 0);
-                }}
-                className="w-full bg-white border border-gray-100 rounded-2xl px-4 py-3 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
-              >
-                <option value="">{t.relationshipPH}</option>
-                <option value={lang === "KO" ? "가족" : "Family"}>{lang === "KO" ? "가족" : "Family"}</option>
-                <option value={lang === "KO" ? "친구" : "Friend"}>{lang === "KO" ? "친구" : "Friend"}</option>
-                <option value={lang === "KO" ? "직장" : "Work"}>{lang === "KO" ? "직장" : "Work"}</option>
-                <option value={lang === "KO" ? "지인" : "Acquaintance"}>{lang === "KO" ? "지인" : "Acquaintance"}</option>
-                <option value={lang === "KO" ? "직접입력" : "Custom"}>{lang === "KO" ? "직접입력" : "Custom"}</option>
-              </select>
-
-              {relationship === "직접입력" || relationship === "Custom" ? (
-                <input
-                  value={relationshipDetail}
-                  onChange={(e) => setRelationshipDetail(e.target.value)}
-                  placeholder={t.relationshipDetailPH}
-                  className="w-full bg-white border border-gray-100 rounded-2xl px-4 py-3 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
-                />
-              ) : (
-                <div className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm text-gray-400">
-                  {" "}
-                </div>
-              )}
-            </div>
           </div>
         </section>
 
@@ -639,21 +588,19 @@ export default function GuestPage() {
               <div className="mt-3 flex items-center gap-2">
                 <button
                   onClick={() => setDisplayMode("nickname")}
-                  className={`px-4 py-2 rounded-full text-[11px] border transition ${
-                    displayMode === "nickname"
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "bg-white text-gray-400 border-gray-100"
-                  }`}
+                  className={`px-4 py-2 rounded-full text-[11px] border transition ${displayMode === "nickname"
+                    ? "bg-gray-800 text-white border-gray-800"
+                    : "bg-white text-gray-400 border-gray-100"
+                    }`}
                 >
                   {t.nickname}
                 </button>
                 <button
                   onClick={() => setDisplayMode("anonymous")}
-                  className={`px-4 py-2 rounded-full text-[11px] border transition ${
-                    displayMode === "anonymous"
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "bg-white text-gray-400 border-gray-100"
-                  }`}
+                  className={`px-4 py-2 rounded-full text-[11px] border transition ${displayMode === "anonymous"
+                    ? "bg-gray-800 text-white border-gray-800"
+                    : "bg-white text-gray-400 border-gray-100"
+                    }`}
                 >
                   {t.anonymous}
                 </button>
@@ -686,11 +633,10 @@ export default function GuestPage() {
                 <button
                   key={acc.id}
                   onClick={() => setSelectedAccountId(acc.id)}
-                  className={`w-full p-4 rounded-2xl text-left border transition-all ${
-                    selectedAccountId === acc.id
-                      ? "border-rose-400 bg-rose-50/50 ring-1 ring-rose-400"
-                      : "border-gray-100 bg-white"
-                  }`}
+                  className={`w-full p-4 rounded-2xl text-left border transition-all ${selectedAccountId === acc.id
+                    ? "border-rose-400 bg-rose-50/50 ring-1 ring-rose-400"
+                    : "border-gray-100 bg-white"
+                    }`}
                 >
                   <p className="text-[10px] font-bold text-rose-400 uppercase">{acc.label}</p>
                   <p className="text-sm font-semibold">
@@ -700,19 +646,16 @@ export default function GuestPage() {
                 </button>
               ))}
 
-              {/* 🔧 수정: 계좌 선택 강제(선택 안 하면 버튼에서 막히지만, UX 힌트도 같이) */}
               {filteredAccounts.length > 0 && !selectedAccountId && (
                 <p className="text-xs text-rose-400 mt-1">{t.selectAccount}</p>
               )}
             </div>
           </section>
-        )}
-
-        {/* Submit */}
+        )}        {/* Submit */}
         <div className="pt-2">
           <button
             onClick={handleSubmit}
-            disabled={loading || !canWrite}
+            disabled={loading}
             className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] disabled:bg-gray-300 transition-all"
           >
             {loading ? t.sending : t.nextBtn}

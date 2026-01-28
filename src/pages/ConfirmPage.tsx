@@ -141,23 +141,23 @@ export default function ConfirmPage() {
   const navigate = useNavigate();
 
   async function getMyMemberId(evId: string): Promise<string> {
-  const { data: userRes, error: userErr } = await supabase.auth.getUser();
-  if (userErr) throw userErr;
-  const userId = userRes?.user?.id;
-  const email = userRes?.user?.email;
-  if (!userId && !email) throw new Error("로그인이 필요합니다.");
+    const { data: userRes, error: userErr } = await supabase.auth.getUser();
+    if (userErr) throw userErr;
+    const userId = userRes?.user?.id;
+    const email = userRes?.user?.email;
+    if (!userId && !email) throw new Error("로그인이 필요합니다.");
 
-  // user_id 우선, 없으면 email로 fallback
-  let q = supabase.from("event_members").select("id").eq("event_id", evId).limit(1);
+    // user_id 우선, 없으면 email로 fallback
+    let q = supabase.from("event_members").select("id").eq("event_id", evId).limit(1);
 
-  if (userId) q = q.eq("user_id", userId);
-  else q = q.eq("email", email);
+    if (userId) q = q.eq("user_id", userId);
+    else q = q.eq("email", email);
 
-  const { data, error } = await q.maybeSingle();
-  if (error) throw error;
-  if (!data?.id) throw new Error("event_members에 본인 멤버가 없습니다. (초대/가입 흐름 확인 필요)");
-  return data.id as string;
-}
+    const { data, error } = await q.maybeSingle();
+    if (error) throw error;
+    if (!data?.id) throw new Error("event_members에 본인 멤버가 없습니다. (초대/가입 흐름 확인 필요)");
+    return data.id as string;
+  }
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -185,9 +185,6 @@ export default function ConfirmPage() {
 
   // ✅ 디스플레이 배경사진(템플릿 선택 시만 사용)
   const [displayStyle, setDisplayStyle] = useState("basic");
-
-  // ✅ 모바일 청첩장 링크 (필수)
-  const [mobileInvitationLink, setMobileInvitationLink] = useState("");
 
   // 배경 모드 & 업로드된 미디어 URL 들
   const [backgroundMode, setBackgroundMode] = useState<"template" | "photo">(
@@ -279,8 +276,7 @@ export default function ConfirmPage() {
           lower_message,
           display_style,
           background_mode,
-          media_urls,
-          mobile_invitation_link
+          media_urls
         `
         )
         .eq("event_id", id)
@@ -310,8 +306,6 @@ export default function ConfirmPage() {
         if (Array.isArray(s.media_urls) && s.media_urls.length > 0)
           setMediaUrls(s.media_urls);
         else setMediaUrls([]);
-
-        setMobileInvitationLink(s.mobile_invitation_link ?? "");
       } else {
         setCeremonyDate(e.ceremony_date ?? "");
         setCeremonyStartTime("");
@@ -322,10 +316,9 @@ export default function ConfirmPage() {
         setDisplayStyle("basic");
         setBackgroundMode("photo");
         setMediaUrls([]);
-        setMobileInvitationLink("");
       }
 
-     // 3) event_accounts (✅ 본인 계좌만)
+      // 3) event_accounts (✅ 본인 계좌만)
       const myMemberId = await getMyMemberId(id);
 
       const { data: accountData, error: accountError } = await supabase
@@ -487,12 +480,12 @@ export default function ConfirmPage() {
         const path = `${eventId}/${filename}`;
 
         const { error: uploadError } = await supabase.storage
-        .from("event-media")
-        .upload(path, file, {
-          upsert: false,
-          contentType: file.type || undefined, // ✅ 중요: video/mp4, image/jpeg 등 명시
-          cacheControl: "3600",
-        });
+          .from("event-media")
+          .upload(path, file, {
+            upsert: false,
+            contentType: file.type || undefined, // ✅ 중요: video/mp4, image/jpeg 등 명시
+            cacheControl: "3600",
+          });
 
         if (uploadError) throw uploadError;
 
@@ -557,22 +550,8 @@ export default function ConfirmPage() {
     setVenueSearchOpen(false);
   };
 
-  const isValidUrl = (v: string) => {
-    try {
-      // eslint-disable-next-line no-new
-      new URL(v);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   // ✅ 필수값 검증
   const validateBeforeSave = () => {
-    if (!mobileInvitationLink.trim()) return "모바일 청첩장 링크는 필수입니다.";
-    if (!isValidUrl(mobileInvitationLink.trim()))
-      return "모바일 청첩장 링크가 유효한 URL 형식이 아닙니다.";
-
     if (!groomName.trim()) return "신랑 이름을 입력해주세요.";
     if (!brideName.trim()) return "신부 이름을 입력해주세요.";
     if (!venueName.trim()) return "예식장을 선택해주세요.";
@@ -615,7 +594,6 @@ export default function ConfirmPage() {
       const msg = validateBeforeSave();
       if (msg) throw new Error(msg);
 
-      const link = mobileInvitationLink.trim();
       const startOffsetNum = DEFAULT_START_OFFSET;
       const endOffsetNum = DEFAULT_END_OFFSET;
 
@@ -664,8 +642,7 @@ export default function ConfirmPage() {
         display_style: displayStyle || "basic",
         recipients: recipients.length > 0 ? recipients : null,
         background_mode: modeToSave,
-        media_urls: mediaToSave,
-        mobile_invitation_link: link,
+        media_urls: mediaToSave
       };
 
       // 3) event_settings upsert
@@ -685,41 +662,41 @@ export default function ConfirmPage() {
         if (inserted) setSettings(inserted as EventSettingsRow);
       }
 
-     // 4) 계좌 저장(전부 삭제 후 insert)
-        const myMemberId = await getMyMemberId(eventId);
+      // 4) 계좌 저장(전부 삭제 후 insert)
+      const myMemberId = await getMyMemberId(eventId);
 
-        const validAccounts = accounts
-          .filter((a) => a.is_active)
-          .filter(
-            (a) =>
-              a.label.trim() &&
-              a.holder_name.trim() &&
-              a.bank_name.trim() &&
-              a.account_number.trim()
-          )
-          .map((a, index) => ({
-            event_id: eventId,
-            owner_member_id: myMemberId, // ✅ 등록/수정한 사람이 owner
-            label: a.label.trim(),
-            holder_name: a.holder_name.trim(),
-            bank_name: a.bank_name.trim(),
-            account_number: a.account_number.trim(),
-            sort_order: index,
-            is_active: a.is_active,
-          }));
+      const validAccounts = accounts
+        .filter((a) => a.is_active)
+        .filter(
+          (a) =>
+            a.label.trim() &&
+            a.holder_name.trim() &&
+            a.bank_name.trim() &&
+            a.account_number.trim()
+        )
+        .map((a, index) => ({
+          event_id: eventId,
+          owner_member_id: myMemberId, // ✅ 등록/수정한 사람이 owner
+          label: a.label.trim(),
+          holder_name: a.holder_name.trim(),
+          bank_name: a.bank_name.trim(),
+          account_number: a.account_number.trim(),
+          sort_order: index,
+          is_active: a.is_active,
+        }));
 
-          const { error: deleteError } = await supabase
-          .from("event_accounts")
-          .delete()
-          .eq("event_id", eventId)
-          .eq("owner_member_id", myMemberId); // ✅ 내 계좌만 삭제
-        if (deleteError && deleteError.code !== "42P01") throw deleteError;
+      const { error: deleteError } = await supabase
+        .from("event_accounts")
+        .delete()
+        .eq("event_id", eventId)
+        .eq("owner_member_id", myMemberId); // ✅ 내 계좌만 삭제
+      if (deleteError && deleteError.code !== "42P01") throw deleteError;
 
-        const { error: insertAccountsError } = await supabase
-          .from("event_accounts")
-          .insert(validAccounts);
-        if (insertAccountsError && insertAccountsError.code !== "42P01")
-          throw insertAccountsError;
+      const { error: insertAccountsError } = await supabase
+        .from("event_accounts")
+        .insert(validAccounts);
+      if (insertAccountsError && insertAccountsError.code !== "42P01")
+        throw insertAccountsError;
 
 
       // ✅ 저장 성공 UX: 문구 교체 + 성공 박스에만 CTA 노출
@@ -790,36 +767,6 @@ export default function ConfirmPage() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
-        {/* 모바일 청첩장 */}
-        <section className="bg-white/70 border border-rose-200/70 ring-1 ring-rose-200/40 rounded-2xl p-4 space-y-4 shadow-2xl shadow-rose-200/30 backdrop-blur-xl transition-all hover:border-rose-300/80">
-          <h2 className="text-sm md:text-lg font-semibold">모바일 청첩장</h2>
-          <p className="text-[11px] text-gray-500">
-            모바일 청첩장 링크는 필수입니다. (예금주/사진 등을 최종 더블체크하기 위한 용도)
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="url"
-              className="flex-1 border rounded-md px-3 py-2 text-sm"
-              placeholder="예: https://m-card.com/your-link"
-              value={mobileInvitationLink}
-              onChange={(e) => setMobileInvitationLink(e.target.value)}
-            />
-            <button
-              type="button"
-              className="sm:w-auto w-full px-3 py-2 text-sm border border-green-300 rounded-full bg-white hover:bg-green-50"
-              onClick={() => {
-                const v = mobileInvitationLink.trim();
-                if (!v) return alert("먼저 모바일 청첩장 링크를 입력해주세요.");
-                if (!isValidUrl(v)) return alert("유효한 URL 형식이 아닙니다.");
-                window.open(v, "_blank", "noopener,noreferrer");
-              }}
-            >
-              링크 열기
-            </button>
-          </div>
-        </section>
-
         {/* 기본 정보 */}
         <section className="bg-white/70 border border-rose-200/70 ring-1 ring-rose-200/40 rounded-2xl p-4 space-y-4 shadow-2xl shadow-rose-200/30 backdrop-blur-xl transition-all hover:border-rose-300/80">
           <h2 className="text-sm md:text-lg font-semibold">기본 정보</h2>
@@ -1198,8 +1145,8 @@ export default function ConfirmPage() {
                 bankMode === "custom"
                   ? "기타(직접 입력)"
                   : acct.bank_name
-                  ? acct.bank_name
-                  : "";
+                    ? acct.bank_name
+                    : "";
 
               return (
                 <div key={index} className="border rounded-lg p-3 bg-gray-50 space-y-2">
@@ -1219,19 +1166,13 @@ export default function ConfirmPage() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                     <div>
                       <label className="block text-[11px] font-medium text-gray-600 mb-1">구분</label>
-                      <select
+                      <input
+                        type="text"
                         className="w-full border rounded-md px-2 py-1.5 text-xs"
+                        placeholder="예: Artist A, Full Team"
                         value={acct.label}
                         onChange={(e) => handleAccountChange(index, "label", e.target.value)}
-                      >
-                        <option value="신랑">신랑</option>
-                        <option value="신부">신부</option>
-                        <option value="신랑 아버지">신랑 아버지</option>
-                        <option value="신랑 어머니">신랑 어머니</option>
-                        <option value="신부 아버지">신부 아버지</option>
-                        <option value="신부 어머니">신부 어머니</option>
-                        <option value="기타">기타</option>
-                      </select>
+                      />
                     </div>
 
                     <div>
