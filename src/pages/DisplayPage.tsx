@@ -598,7 +598,7 @@ export default function DisplayPage() {
             </p>
 
             <img
-              src="/preic_qr.png"
+              src="/party_qr.png"
               className="mx-auto"
               style={{ width: qrSize, height: qrSize }}
               alt="QR"
