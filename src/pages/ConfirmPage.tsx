@@ -523,13 +523,23 @@ export default function ConfirmPage() {
     ]);
   }
 
-  function removeAccount(index: number) {
-    setAccounts((prev) =>
-      prev
-        .filter((_, i) => i !== index)
-        .map((acct, i) => ({ ...acct, sort_order: i }))
-    );
-  }
+  // ✅ "삭제"는 DB에서 지우지 않음
+// - id 있는 기존 계좌: is_active=false로 숨김 처리
+// - id 없는 신규 계좌: 배열에서 제거
+function removeAccount(index: number) {
+  setAccounts((prev) => {
+    const target = prev[index];
+
+    const next =
+      target?.id
+        ? prev.map((a, i) => (i === index ? { ...a, is_active: false } : a))
+        : prev.filter((_, i) => i !== index);
+
+    // sort_order 재정렬
+    return next.map((acct, i) => ({ ...acct, sort_order: i }));
+  });
+}
+
 
   function removeMedia(index: number) {
     setMediaUrls((prev) => prev.filter((_, i) => i !== index));
@@ -806,63 +816,51 @@ export default function ConfirmPage() {
         if (inserted) setSettings(inserted as EventSettingsRow);
       }
 
-      // 4) 계좌 저장 (필요한 것만 삭제 후 upsert)
-      const validAccounts = accounts
-        .filter((a) => a.is_active)
-        .filter(
-          (a) =>
-            a.label.trim() &&
-            a.holder_name.trim() &&
-            a.bank_name.trim() &&
-            a.account_number.trim()
-        )
-        .map((a, index) => ({
-          ...(a.id ? { id: a.id } : {}),
-          event_id: eventId,
-          owner_member_id: a.owner_member_id || null, // 수정: 내 것이 아닐 수도 있으므로 a.owner_member_id 사용
-          label: a.label.trim(),
-          holder_name: a.holder_name.trim(),
-          bank_name: a.bank_name.trim(), // ✅ 한글 그대로 저장 (DB 변경 없음)
-          account_number: a.account_number.trim(),
-          sort_order: index,
-          is_active: a.is_active,
-        }));
+    // =========================================================
+// ✅ 4) 계좌 저장 (DB delete 금지 / upsert+insert만)
+// - FK 이슈(삭제 불가) 때문에 deleteQuery를 절대 호출하지 않음
+// - (추천) is_active=false도 저장해서 "삭제(숨김)" 상태가 DB에 반영되게 함
+// =========================================================
 
-      // 4-1) 보전할 ID 목록
-      const keepIds = validAccounts.map((a: any) => a.id).filter(Boolean);
+// 저장 대상: 필수값(라벨/예금주/은행/계좌번호) 있는 것만 (활성/비활성 모두 포함)
+const saveCandidates = accounts
+  .filter(
+    (a) =>
+      a.label.trim() &&
+      a.holder_name.trim() &&
+      a.bank_name.trim() &&
+      a.account_number.trim()
+  )
+  .map((a, index) => ({
+    ...(a.id ? { id: a.id } : {}),
+    event_id: eventId,
+    owner_member_id: a.owner_member_id || null,
+    label: a.label.trim(),
+    holder_name: a.holder_name.trim(),
+    bank_name: a.bank_name.trim(), // ✅ 한글 그대로 저장 (DB 변경 없음)
+    account_number: a.account_number.trim(),
+    sort_order: index,
+    is_active: !!a.is_active,
+  }));
 
-      // 4-2) 현재 DB에 있는 전체 계좌 중, validAccounts에 없는 것만 삭제 (공유 모드)
-      let deleteQuery = supabase
-        .from("event_accounts")
-        .delete()
-        .eq("event_id", eventId);
+// id 있는 것은 upsert, 없는 것은 insert
+const existingToUpsert = saveCandidates.filter((a: any) => a.id);
+const newToInsert = saveCandidates.filter((a: any) => !a.id);
 
-      if (keepIds.length > 0) {
-        deleteQuery = deleteQuery.not("id", "in", `(${keepIds.join(",")})`);
-      }
+if (existingToUpsert.length > 0) {
+  const { error: upsertError } = await supabase
+    .from("event_accounts")
+    .upsert(existingToUpsert);
+  if (upsertError && upsertError.code !== "42P01") throw upsertError;
+}
 
-      const { error: deleteError } = await deleteQuery;
-      if (deleteError && deleteError.code !== "42P01") throw deleteError;
+if (newToInsert.length > 0) {
+  const { error: insertError } = await supabase
+    .from("event_accounts")
+    .insert(newToInsert);
+  if (insertError && insertError.code !== "42P01") throw insertError;
+}
 
-      // 4-3) 분리하여 저장 (ID가 있는 것은 upsert, 없는 것은 insert)
-      // 혼합된 배열을 한 번에 upsert하면 새 행에 id: null이 들어가서 에러가 날 수 있음
-      const existingToUpsert = validAccounts.filter((a: any) => a.id);
-      const newToInsert = validAccounts.filter((a: any) => !a.id);
-
-      if (existingToUpsert.length > 0) {
-        const { error: upsertError } = await supabase
-          .from("event_accounts")
-          .upsert(existingToUpsert);
-        if (upsertError && upsertError.code !== "42P01") throw upsertError;
-      }
-
-      if (newToInsert.length > 0) {
-        // insert 할 때는 id 컬럼 자체가 없는 상태여야 함 (이미 mapping에서 제외됨)
-        const { error: insertError } = await supabase
-          .from("event_accounts")
-          .insert(newToInsert);
-        if (insertError && insertError.code !== "42P01") throw insertError;
-      }
 
       setSuccess(
         "저장이 완료되었습니다. 상세 설정은 예식 1시간 전까지 변경할 수 있습니다."
