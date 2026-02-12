@@ -436,17 +436,13 @@ export default function DisplayPage() {
         lineHeight: 1.05,
       };
 
-  const titleStyle: CSSProperties = isPortrait
-    ? {
-        fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-        fontSize: "clamp(60px, 5.0vw, 102px)",
-        lineHeight: 1.03,
-      }
-    : {
-        fontFamily: "Noto Serif KR, Nanum Myeongjo, serif",
-        fontSize: "clamp(22px, 3.2vw, 52px)",
-        lineHeight: 1.1,
-      };
+  const titleStyle: CSSProperties = {
+  fontFamily: "'Playfair Display', serif",
+  fontSize: "clamp(60px, 5vw, 100px)",
+  letterSpacing: "0.03em",
+  lineHeight: 1.1,
+};
+
 
   const lowerStyle: CSSProperties = isPortrait
     ? { fontSize: "clamp(30px, 2.6vw, 46px)" }
@@ -583,8 +579,8 @@ export default function DisplayPage() {
       >
         <div className="absolute inset-0 bg-black/40 z-20" />
 
-        <div className="relative w-full max-w-6xl flex items-center justify-between z-40">
-          <div className="text-right">
+        <div className="relative w-full max-w-6xl flex items-center justify-center z-40">
+          {/*<div className="text-right">
             <p
               className={`${groomBrideLabelClass} ${groomBrideGapClass} text-white/70`}
               style={roleLabelStyle}
@@ -594,11 +590,11 @@ export default function DisplayPage() {
             <p className="text-white font-bold" style={nameStyle}>
               {groomName}
             </p>
-          </div>
+          </div>*/}
 
           <div className="text-center">
             <p className="text-white font-bold mb-3" style={titleStyle}>
-              축하의 마음 전하기
+              SOLAS's HBD Party
             </p>
 
             <img
@@ -619,7 +615,7 @@ export default function DisplayPage() {
             )}
           </div>
 
-          <div className="text-left">
+          {/*<div className="text-left">
             <p
               className={`${groomBrideLabelClass} ${groomBrideGapClass} text-white/70`}
               style={roleLabelStyle}
@@ -629,7 +625,7 @@ export default function DisplayPage() {
             <p className="text-white font-bold" style={nameStyle}>
               {brideName}
             </p>
-          </div>
+          </div>*/}
         </div>
       </header>
 
