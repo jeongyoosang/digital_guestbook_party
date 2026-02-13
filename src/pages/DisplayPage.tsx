@@ -704,8 +704,7 @@ export default function DisplayPage() {
         className="absolute inset-0 w-full h-full object-cover"
         alt="background"
       />
-    ) : (
-      // ✅ 가로 사진: 블러 배경 + 앞에 contain
+          // ✅ 가로 사진: 블러 배경 + 앞에 contain
       ) : (
           // ✅ 가로 사진: 블러 배경 + 앞에 contain (원본 위에는 어떤 오버레이도 얹지 않음)
           <>
