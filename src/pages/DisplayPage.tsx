@@ -637,8 +637,9 @@ export default function DisplayPage() {
         </div>
       </header>
 
+      
       {/* MAIN */}
-      <section
+<section
   className="relative flex-1 overflow-hidden"
   style={{
     minHeight: `calc(100vh - ${topBarHeight} - ${FOOTER_HEIGHT_PX}px)`,
@@ -665,9 +666,8 @@ export default function DisplayPage() {
           }}
         />
       ) : (
-        // ✅ 가로 영상: contain(잘림 없음) + 좌우(상하) 빈공간은 블러 영상으로 채움
+        // ✅ 가로 영상: contain + 블러 배경
         <>
-          {/* 뒤: 블러 배경(여백 자연스럽게) */}
           <video
             key={`blur-${currentMediaUrl}`}
             src={currentMediaUrl}
@@ -678,8 +678,6 @@ export default function DisplayPage() {
             playsInline
             preload="auto"
           />
-
-          {/* 앞: 원본 비율 유지 */}
           <video
             ref={videoRef}
             key={currentMediaUrl}
@@ -698,37 +696,36 @@ export default function DisplayPage() {
         </>
       )
     ) : isPortrait ? (
-      // ✅ 세로 사진: 꽉 채움
+      // ✅ 세로 사진: cover
       <img
         src={currentMediaUrl}
         className="absolute inset-0 w-full h-full object-cover"
         alt="background"
       />
-          // ✅ 가로 사진: 블러 배경 + 앞에 contain
-      ) : (
-          // ✅ 가로 사진: 블러 배경 + 앞에 contain (원본 위에는 어떤 오버레이도 얹지 않음)
-          <>
-            {/* 뒤: 블러 배경 (여백 자연스럽게) */}
-            <div className="absolute inset-0">
-              <img
-                src={currentMediaUrl}
-                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
-                alt="background blur"
-              />
-              {/* ✅ 오버레이가 필요하면 "블러 배경"에만 아주 약하게 (원본 위 X) */}
-              <div className="absolute inset-0 bg-black/5" />
-            </div>
-
-            {/* 앞: 원본 비율 유지 (여기 위에는 오버레이 절대 금지) */}
-            <img
-              src={currentMediaUrl}
-              className="absolute inset-0 w-full h-full object-contain"
-              alt="background contain"
-            />
-          </>
-        )
-
-        </section>
+    ) : (
+      // ✅ 가로 사진: blur 배경 + 원본 contain (원본 위 오버레이 없음)
+      <>
+        <img
+          src={currentMediaUrl}
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+          alt="background blur"
+        />
+        <img
+          src={currentMediaUrl}
+          className="absolute inset-0 w-full h-full object-contain"
+          alt="background contain"
+        />
+      </>
+    )
+  ) : (
+    <div
+      className="absolute inset-0 bg-cover bg-center"
+      style={{
+        backgroundImage: `url(/display-templates/${displayStyle}/background.jpg)`,
+      }}
+    />
+  )}
+</section>
 
 
       {/* FOOTER */}
