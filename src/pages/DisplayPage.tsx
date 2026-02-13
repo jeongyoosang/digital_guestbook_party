@@ -706,49 +706,30 @@ export default function DisplayPage() {
       />
     ) : (
       // ✅ 가로 사진: 블러 배경 + 앞에 contain
-      <>
-        {/* 뒤: 블러 배경 */}
-        <img
-          src={currentMediaUrl}
-          className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
-          alt="background blur"
-        />
+      ) : (
+          // ✅ 가로 사진: 블러 배경 + 앞에 contain (원본 위에는 어떤 오버레이도 얹지 않음)
+          <>
+            {/* 뒤: 블러 배경 (여백 자연스럽게) */}
+            <div className="absolute inset-0">
+              <img
+                src={currentMediaUrl}
+                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+                alt="background blur"
+              />
+              {/* ✅ 오버레이가 필요하면 "블러 배경"에만 아주 약하게 (원본 위 X) */}
+              <div className="absolute inset-0 bg-black/5" />
+            </div>
 
-        {/* 앞: 원본 비율 유지 */}
-        <img
-          src={currentMediaUrl}
-          className="absolute inset-0 w-full h-full object-contain"
-          alt="background contain"
-        />
+            {/* 앞: 원본 비율 유지 (여기 위에는 오버레이 절대 금지) */}
+            <img
+              src={currentMediaUrl}
+              className="absolute inset-0 w-full h-full object-contain"
+              alt="background contain"
+            />
+          </>
+        )
 
-        {/* ✅ (선택) 아주 얇게 어두운 필름: 경계 어색함 줄이기 */}
-        <div className="absolute inset-0 bg-black/10" />
-      </>
-    )
-  ) : (
-    <div
-      className="absolute inset-0 bg-cover bg-center"
-      style={{
-        backgroundImage: `url(/display-templates/${displayStyle}/background.jpg)`,
-      }}
-    />
-  )}
-
-  {/* ✅ (선택) 상단 헤더 영역 블러 “침투”를 섹션에서 최대한 막는 클립
-      - 헤더가 반투명이라 아래 블러가 비쳐보이면, 섹션에서 위쪽 일부를 살짝 어둡게 처리해서 완화
-      - 완벽 해결은 '헤더 오버레이 진하게' 한 줄이 더 확실함(아래 보너스 참고)
-  */}
-  {!isPortrait && usePhotoBackground && !currentIsVideo && (
-    <div
-      className="absolute left-0 right-0 top-0 pointer-events-none"
-      style={{
-        height: "14vh",
-        background:
-          "linear-gradient(to bottom, rgba(0,0,0,0.75), rgba(0,0,0,0))",
-      }}
-    />
-  )}
-</section>
+        </section>
 
 
       {/* FOOTER */}
