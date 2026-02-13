@@ -577,7 +577,15 @@ export default function DisplayPage() {
         className="relative w-full flex items-center justify-center px-6"
         style={{ height: topBarHeight }}
       >
-        <div className="absolute inset-0 bg-black/40 z-20" />
+        <div
+          className="absolute inset-0 z-20"
+          style={{
+            backgroundColor:
+              !isPortrait && usePhotoBackground && !currentIsVideo
+                ? "rgba(0,0,0,0.92)" // ✅ 가로+사진이면 거의 불투명 → 블러가 위로 안 비침
+                : "rgba(0,0,0,0.40)", // 그 외는 기존 느낌 유지
+          }}
+        />
 
         <div className="relative w-full max-w-6xl flex items-center justify-center z-40">
           {/*<div className="text-right">
@@ -631,88 +639,117 @@ export default function DisplayPage() {
 
       {/* MAIN */}
       <section
-        className="relative flex-1"
-        style={{
-          minHeight: `calc(100vh - ${topBarHeight} - ${FOOTER_HEIGHT_PX}px)`,
-        }}
-      >
-        {usePhotoBackground ? (
-            currentIsVideo ? (
-              isPortrait ? (
-                // ✅ 세로 화면: 기존처럼 꽉 채우되(cover) 윗부분 보존을 위해 objectPosition만 살짝 위로
-                <video
-                  ref={videoRef}
-                  key={currentMediaUrl}
-                  src={currentMediaUrl}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{ objectPosition: "center top" }}
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                  onEnded={() => advanceSlide()}
-                  onLoadedMetadata={() => {
-                    const v = videoRef.current;
-                    if (!v) return;
-                    v.play().catch(() => {});
-                  }}
-                />
-              ) : (
-                // ✅ 가로 화면: contain으로 “전체 프레임 보이게” + 블러 배경으로 빈 공간 커버
-                <>
-                  <video
-                    src={currentMediaUrl}
-                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
-                  />
-                  <video
-                    ref={videoRef}
-                    key={currentMediaUrl}
-                    src={currentMediaUrl}
-                    className="absolute inset-0 w-full h-full object-contain"
-                    autoPlay
-                    playsInline
-                    preload="auto"
-                    onEnded={() => advanceSlide()}
-                    onLoadedMetadata={() => {
-                      const v = videoRef.current;
-                      if (!v) return;
-                      v.play().catch(() => {});
-                    }}
-                  />
-                </>
-              )
-            ) : isPortrait ? (
-              <img
-                src={currentMediaUrl}
-                className="absolute inset-0 w-full h-full object-cover"
-                alt="background"
-              />
-            ) : (
-              <>
-                <img
-                  src={currentMediaUrl}
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
-                  alt="background blur"
-                />
-                <img
-                  src={currentMediaUrl}
-                  className="absolute inset-0 w-full h-full object-contain"
-                  alt="background contain"
-                />
-              </>
-            )
-          ) : (
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: `url(/display-templates/${displayStyle}/background.jpg)`,
-              }}
-            />
-          )}
-      </section>
+  className="relative flex-1 overflow-hidden"
+  style={{
+    minHeight: `calc(100vh - ${topBarHeight} - ${FOOTER_HEIGHT_PX}px)`,
+  }}
+>
+  {usePhotoBackground ? (
+    currentIsVideo ? (
+      isPortrait ? (
+        // ✅ 세로 영상: 꽉 채우되 상단 보존
+        <video
+          ref={videoRef}
+          key={currentMediaUrl}
+          src={currentMediaUrl}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center top" }}
+          autoPlay
+          playsInline
+          preload="auto"
+          onEnded={() => advanceSlide()}
+          onLoadedMetadata={() => {
+            const v = videoRef.current;
+            if (!v) return;
+            v.play().catch(() => {});
+          }}
+        />
+      ) : (
+        // ✅ 가로 영상: contain(잘림 없음) + 좌우(상하) 빈공간은 블러 영상으로 채움
+        <>
+          {/* 뒤: 블러 배경(여백 자연스럽게) */}
+          <video
+            key={`blur-${currentMediaUrl}`}
+            src={currentMediaUrl}
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+            muted
+            loop
+            autoPlay
+            playsInline
+            preload="auto"
+          />
+
+          {/* 앞: 원본 비율 유지 */}
+          <video
+            ref={videoRef}
+            key={currentMediaUrl}
+            src={currentMediaUrl}
+            className="absolute inset-0 w-full h-full object-contain"
+            autoPlay
+            playsInline
+            preload="auto"
+            onEnded={() => advanceSlide()}
+            onLoadedMetadata={() => {
+              const v = videoRef.current;
+              if (!v) return;
+              v.play().catch(() => {});
+            }}
+          />
+        </>
+      )
+    ) : isPortrait ? (
+      // ✅ 세로 사진: 꽉 채움
+      <img
+        src={currentMediaUrl}
+        className="absolute inset-0 w-full h-full object-cover"
+        alt="background"
+      />
+    ) : (
+      // ✅ 가로 사진: 블러 배경 + 앞에 contain
+      <>
+        {/* 뒤: 블러 배경 */}
+        <img
+          src={currentMediaUrl}
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+          alt="background blur"
+        />
+
+        {/* 앞: 원본 비율 유지 */}
+        <img
+          src={currentMediaUrl}
+          className="absolute inset-0 w-full h-full object-contain"
+          alt="background contain"
+        />
+
+        {/* ✅ (선택) 아주 얇게 어두운 필름: 경계 어색함 줄이기 */}
+        <div className="absolute inset-0 bg-black/10" />
+      </>
+    )
+  ) : (
+    <div
+      className="absolute inset-0 bg-cover bg-center"
+      style={{
+        backgroundImage: `url(/display-templates/${displayStyle}/background.jpg)`,
+      }}
+    />
+  )}
+
+  {/* ✅ (선택) 상단 헤더 영역 블러 “침투”를 섹션에서 최대한 막는 클립
+      - 헤더가 반투명이라 아래 블러가 비쳐보이면, 섹션에서 위쪽 일부를 살짝 어둡게 처리해서 완화
+      - 완벽 해결은 '헤더 오버레이 진하게' 한 줄이 더 확실함(아래 보너스 참고)
+  */}
+  {!isPortrait && usePhotoBackground && !currentIsVideo && (
+    <div
+      className="absolute left-0 right-0 top-0 pointer-events-none"
+      style={{
+        height: "14vh",
+        background:
+          "linear-gradient(to bottom, rgba(0,0,0,0.75), rgba(0,0,0,0))",
+      }}
+    />
+  )}
+</section>
+
 
       {/* FOOTER */}
       <footer
