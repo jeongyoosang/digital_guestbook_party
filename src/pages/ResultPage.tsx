@@ -1321,9 +1321,11 @@ export default function ResultPage() {
       const brideName =
         recipients.find((r) => r.role === "bride" || String(r.role ?? "").includes("신부"))?.name ?? "";
 
-      // ✅ 날짜 + 누구누구 결혼식 (주최리포트/페이지표시 제거)
+      // ✅ 날짜 + 누구누구 결혼식 (주최리포트/페이지표시 제거) 지금 soloar생일파티로 임시 적용 
       const dateText = settings?.ceremony_date ?? yyyymmdd(settings?.ceremony_date);
-      const sub = `${dateText} • ${groomName || "신랑"} & ${brideName || "신부"} 결혼식`;
+      /*const sub = `${dateText} • ${groomName || "신랑"} & ${brideName || "신부"} 결혼식`;*/
+      const sub = dateText ? `${dateText} • SOLAR's HBD Party` : "SOLAR's HBD Party";
+
 
       ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
       ctx.font = `900 20px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
