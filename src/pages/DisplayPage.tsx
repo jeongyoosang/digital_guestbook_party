@@ -637,52 +637,81 @@ export default function DisplayPage() {
         }}
       >
         {usePhotoBackground ? (
-          currentIsVideo ? (
-            <video
-              ref={videoRef}
-              key={currentMediaUrl}
-              src={currentMediaUrl}
-              className="absolute inset-0 w-full h-full object-cover"
-              autoPlay
-              playsInline
-              preload="auto"
-              onEnded={() => {
-                advanceSlide();
-              }}
-              onLoadedMetadata={() => {
-                const v = videoRef.current;
-                if (!v) return;
-                v.play().catch(() => {});
-              }}
-            />
-          ) : isPortrait ? (
-            <img
-              src={currentMediaUrl}
-              className="absolute inset-0 w-full h-full object-cover"
-              alt="background"
-            />
+            currentIsVideo ? (
+              isPortrait ? (
+                // ✅ 세로 화면: 기존처럼 꽉 채우되(cover) 윗부분 보존을 위해 objectPosition만 살짝 위로
+                <video
+                  ref={videoRef}
+                  key={currentMediaUrl}
+                  src={currentMediaUrl}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ objectPosition: "center top" }}
+                  autoPlay
+                  playsInline
+                  preload="auto"
+                  onEnded={() => advanceSlide()}
+                  onLoadedMetadata={() => {
+                    const v = videoRef.current;
+                    if (!v) return;
+                    v.play().catch(() => {});
+                  }}
+                />
+              ) : (
+                // ✅ 가로 화면: contain으로 “전체 프레임 보이게” + 블러 배경으로 빈 공간 커버
+                <>
+                  <video
+                    src={currentMediaUrl}
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+                    muted
+                    loop
+                    playsInline
+                    preload="auto"
+                  />
+                  <video
+                    ref={videoRef}
+                    key={currentMediaUrl}
+                    src={currentMediaUrl}
+                    className="absolute inset-0 w-full h-full object-contain"
+                    autoPlay
+                    playsInline
+                    preload="auto"
+                    onEnded={() => advanceSlide()}
+                    onLoadedMetadata={() => {
+                      const v = videoRef.current;
+                      if (!v) return;
+                      v.play().catch(() => {});
+                    }}
+                  />
+                </>
+              )
+            ) : isPortrait ? (
+              <img
+                src={currentMediaUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                alt="background"
+              />
+            ) : (
+              <>
+                <img
+                  src={currentMediaUrl}
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+                  alt="background blur"
+                />
+                <img
+                  src={currentMediaUrl}
+                  className="absolute inset-0 w-full h-full object-contain"
+                  alt="background contain"
+                />
+              </>
+            )
           ) : (
-            <>
-              <img
-                src={currentMediaUrl}
-                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
-                alt="background blur"
-              />
-              <img
-                src={currentMediaUrl}
-                className="absolute inset-0 w-full h-full object-contain"
-                alt="background contain"
-              />
-            </>
-          )
-        ) : (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(/display-templates/${displayStyle}/background.jpg)`,
-            }}
-          />
-        )}
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(/display-templates/${displayStyle}/background.jpg)`,
+              }}
+            />
+          )}
       </section>
 
       {/* FOOTER */}
